@@ -1,0 +1,2 @@
+IP Pool Name;IP Pool CIDR;Gateway;DHCP Servers;DNS Servers;Overlapping;Fabric;Virtual Network;Traffic Type;Layer 2;AP Provision
+Client_Pool_4;10.25.4.0/24;10.25.4.1;10.25.0.30;10.25.0.30;FALSE;Lab;DEFAULT_VN;DATA;TRUE;FALSE
