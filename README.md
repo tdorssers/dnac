@@ -17,5 +17,7 @@ Or as a context manager:
 ```
 ## Sample scripts
 
-* `cfs-import.py` configures Campus fabric edge ports from a csv file
+* `segment.py` displays SDA segments
 * `pool-import.py` adds global IP pools and assigns them to virtual networks from csv file
+* `cfs-import.py` configures Campus fabric edge ports from a csv file
+* `template.py` provisions a user template without the use of network profiles
