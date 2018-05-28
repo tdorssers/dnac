@@ -1,2 +1,2 @@
-Hostname;Interface;Authentication;Scalable group;Data segment;Voice segment
-Switch;GigabitEthernet1/0/1;;;10_25_4_0-DEFAULT_VN;
+Hostname,Interface,Authentication,Scalable group,Data segment,Voice segment
+Switch,GigabitEthernet1/0/1,,,10_25_4_0-DEFAULT_VN,
