@@ -11,8 +11,8 @@ HOST = ""
 USERNAME = ""
 PASSWORD = ""
 CSVFILE = "pool-import.csv"
-DELIMIT = ";"
-LOGGING = True
+DELIMIT = ","
+LOGGING = False
 
 def lookup(list_dicts, key, val):
     """ Find key by value in list of dicts and return dict """

@@ -9,7 +9,7 @@ import logging
 HOST = ""
 USERNAME = ""
 PASSWORD = ""
-LOGGING = True
+LOGGING = False
 
 def main():
     if LOGGING:
@@ -24,9 +24,9 @@ def main():
         print(fmt.format("VLAN", "Name", "Traffic type", "Layer 2", "Fabric"))
         print('-'*80)
         for segment in segments.response:
-            cd = dna.find(domains, segment.connectivityDomain.idRef).name
+            fabric = dna.find(domains, segment.connectivityDomain.idRef).name
             print(fmt.format(segment.vlanId, segment.name, segment.trafficType,
-                             str(segment.isFloodAndLearn), cd))
+                             str(segment.isFloodAndLearn), fabric))
         print('='*80)
 
 if __name__ == "__main__":

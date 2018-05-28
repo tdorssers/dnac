@@ -10,8 +10,8 @@ HOST = ""
 USERNAME = ""
 PASSWORD = ""
 CSVFILE = "cfs-import.csv"
-DELIMIT = ";"
-LOGGING = True
+DELIMIT = ","
+LOGGING = False
 
 def lookup(list_dicts, key, val):
     """ Find key by value in list of dicts and return dict """
@@ -66,7 +66,7 @@ def main():
                     try:
                         if_ids.remove(interface.id)
                     except ValueError:
-                        raise(InputError(interface.portName + " not in cfs"))
+                        raise(ValueError(interface.portName + " not in cfs"))
                     removed.append(interface.portName)
                 # Update interface if id is found in list
                 elif interface.id in if_ids:
