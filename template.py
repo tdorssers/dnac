@@ -80,7 +80,7 @@ def main():
             return
         # Instruct CFS to deploy a user template
         logging.debug("payload=" + json.dumps(data))
-        payload = base64.b64encode(json.dumps(data))
+        payload = base64.b64encode(json.dumps(data).encode()).decode()
         dis[0].customProvisions = [{"type": "USER_CLI_TEMPLATE_PROVISION",
                                     "payload": payload}]
         # Commit changes
