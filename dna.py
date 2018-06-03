@@ -43,34 +43,36 @@ class Dnac(requests.Session):
 
     def request(self, method, api, ver='v1', data=None, **kwargs):
         """ Extends base class method to handle DNA Center JSON data """
-        # Construct URL, serialize data, send request and de-serialize response
+        # Construct URL, serialize data and send request
         url = self.base_url + '/api/' + ver + '/' + api.strip('/')
-        data = json.dumps(data) if data is not None else None
+        data = json.dumps(data).encode('utf-8') if data is not None else None
         response = super(Dnac, self).request(method, url, data=data, **kwargs)
-        try:
-            json_obj = response.json(object_hook=JsonObj)
-        except ValueError:               # No JSON object could be decoded
+        # Return requests.Response object if content is not JSON
+        content_type = response.headers.get('Content-Type', '')
+        if 'application/json' not in content_type.lower():
+            logging.debug('Not decoding ' + content_type)
             response.raise_for_status()  # Raise HTTPError, if one occurred
-            raise                        # Raise ValueError otherwise
-        # Use DNA Center JSON encoded error message in case of HTTP error
+            return response
+        # Otherwise deserialize data and return JsonObj object
+        json_obj = response.json(object_hook=JsonObj)
         if 400 <= response.status_code < 600 and 'response' in json_obj:
+            # Use DNA Center returned error message in case of HTTP error
             response.reason = _flatten(': ', json_obj.response,
                                        ['errorCode', 'message', 'detail'])
-        response.raise_for_status()
+        response.raise_for_status()  # Raise HTTPError, if one occurred
         return json_obj
 
     def wait_on_task(self, task_id, timeout=125, interval=2, backoff=1.15):
         """ Repeatedly requests DNA Center task status until completed """
         start_time = time.time()
         while True:
-            # Get task status
+            # Get task status by id
             response = self.get('task/' + task_id)
-            task = response.response
-            if 'endTime' in task:  # Task has completed
-                msg = _flatten(': ', task,
+            if 'endTime' in response.response:  # Task has completed
+                msg = _flatten(': ', response.response,
                                ['errorCode', 'failureReason', 'progress'])
                 # Raise exception when isError is true else log completion
-                if 'isError' in task and task.isError is True:
+                if response.response.get('isError', False):
                     raise TaskError(msg, response=response)
                 else:
                     logging.info('TASK %s has completed and returned: %s'

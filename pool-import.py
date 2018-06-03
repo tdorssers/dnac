@@ -12,7 +12,7 @@ USERNAME = ""
 PASSWORD = ""
 CSVFILE = "pool-import.csv"
 DELIMIT = ","
-LOGGING = False
+LOGGING = True
 
 def lookup(list_dicts, key, val):
     """ Find key by value in list of dicts and return dict """

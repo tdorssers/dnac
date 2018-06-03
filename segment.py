@@ -9,7 +9,7 @@ import logging
 HOST = ""
 USERNAME = ""
 PASSWORD = ""
-LOGGING = False
+LOGGING = True
 
 def main():
     if LOGGING:
@@ -20,7 +20,7 @@ def main():
         domains = dnac.get("data/customer-facing-service/ConnectivityDomain",
                            ver="v2")
         segments = dnac.get("data/customer-facing-service/Segment", ver="v2")
-        fmt = "{:4s} {:26s} {:13s} {:7s} {:26s}"
+        fmt = "{:4} {:26} {:13} {:7} {:26}"
         print(fmt.format("VLAN", "Name", "Traffic type", "Layer 2", "Fabric"))
         print('-'*80)
         for segment in segments.response:
