@@ -1,2 +1,4 @@
-Hostname,Interface,Authentication,Scalable group,Data segment,Voice segment
-Switch,GigabitEthernet1/0/1,,,10_25_4_0-DEFAULT_VN,
+Hostname,Interface,Authentication,Scalable group,Data segment,Voice segment,Device type
+E-3.dna-lab.vosko.nl,GigabitEthernet1/0/3,,,10_25_4_0-DEFAULT_VN,,USER_DEVICE
+E-3.dna-lab.vosko.nl,GigabitEthernet1/0/4,,,10_25_4_0-DEFAULT_VN,,USER_DEVICE
+E-3.dna-lab.vosko.nl,GigabitEthernet1/0/5,,,10_25_4_0-DEFAULT_VN,,USER_DEVICE

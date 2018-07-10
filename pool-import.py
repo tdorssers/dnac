@@ -1,4 +1,4 @@
-""" Script to add global IP pools assigned to virtual networks from csv file """
+""" Script to add root and reserve sub IP pools from a csv file """
 
 from __future__ import print_function
 import json
@@ -40,55 +40,75 @@ def main():
     with dna.Dnac(HOST) as dnac:
         dnac.login(USERNAME, PASSWORD)
         # Get fabric domains, virtual networks and virtual network contexts
-        domains = dnac.get("data/customer-facing-service/ConnectivityDomain",
-                           ver="v2").response
-        vns = dnac.get("data/customer-facing-service/VirtualNetwork",
-                       ver="v2").response
-        vncs = dnac.get("data/customer-facing-service/virtualnetworkcontext",
-                        ver="v2").response
+        ippools = dnac.get("ippool", ver="v2").response
+        sites = dnac.get("group", params={"groupType": "SITE"}).response
         for row in rows:
-            print("Adding %s" % row["IP Pool Name"])
-            # Lookup objects matching name specified in csv file rows
-            domain = lookup(domains, "name", row["Fabric"])
-            vnc = lookup(vncs, "name", row["Virtual Network"])
-            vn = next(v for v in vns if v.namespace == domain.id
-                      and v.virtualNetworkContextId == vnc.id)
-            # Request body for new IP pool
-            data = {"ipPoolCidr": row["IP Pool CIDR"],
-                    "ipPoolName": row["IP Pool Name"],
-                    "dhcpServerIps": make_list(row["DHCP Servers"]),
-                    "dnsServerIps": make_list(row["DNS Servers"]),
-                    "gateways": make_list(row["Gateway"]),
-                    "overlapping": make_bool(row["Overlapping"])}
-            # Commit request
-            logging.debug("data=" + json.dumps(data))
-            response = dnac.post("ippool", ver="v2", data=data).response
-            print("Waiting for Task")
-            task_result = dnac.wait_on_task(response.taskId).response
-            print("Completed in %s seconds" % (float(task_result.endTime
-                                               - task_result.startTime) / 1000))
-            # Segment name is composed of CIDR and VN
-            name = (row["IP Pool CIDR"].split('/')[0].replace('.', '_') + '-'
-                    + row["Virtual Network"])
-            print("Adding %s" % name)
-            # Object for updated virtual network
-            data = {"type": "Segment", "name": name,
-                    "trafficType": row["Traffic Type"],
-                    "ipPoolId": task_result.progress,
-                    "isFloodAndLearn": make_bool(row["Layer 2"]),
-                    "isApProvisioning": make_bool(row["AP Provision"]),
-                    "isDefaultEnterprise": False,
-                    "connectivityDomain": {"idRef": domain.id}}
-            # Append to segment list
-            vn.segment.append(data)
-            # Commit request
-            logging.debug("data=" + json.dumps([vn]))
-            response = dnac.put("data/customer-facing-service/VirtualNetwork",
-                                ver="v2", data=[vn]).response
-            print("Waiting for Task")
-            task_result = dnac.wait_on_task(response.taskId).response
-            print("Completed in %s seconds" % (float(task_result.endTime
-                                               - task_result.startTime) / 1000))
+            parent = lookup(ippools, "ipPoolName", row["Parent Pool"])
+            site = lookup(sites, "groupNameHierarchy", row["Site"])
+            # Reserve sub pool
+            if parent is not None:
+                print("Reserving %s" % row["IP Pool Name"])
+                # Request body for new sub pool
+                data = {"ipPoolName": row["IP Pool Name"],
+                        "ipPoolOwner": "DNAC",
+                        "ipPoolCidr": row["IP Pool CIDR"],
+                        "parentUuid": parent.id,
+                        "shared": True,
+                        "overlapping": make_bool(row["Overlapping"]),
+                        "context": [{"contextKey": "siteId",
+                                     "contextValue": site.id}],
+                        "dhcpServerIps": make_list(row["DHCP Servers"]),
+                        "dnsServerIps": make_list(row["DNS Servers"]),
+                        "gateways": make_list(row["Gateway"])}
+                # Commit request
+                logging.debug("data=" + json.dumps(data))
+                response = dnac.post("ippool/subpool", ver="v2",
+                                     data=data).response
+                print("Waiting for Task")
+                task_result = dnac.wait_on_task(response.taskId).response
+                print("Completed in %s seconds" % (float(task_result.endTime
+                                                   - task_result.startTime)
+                                                   / 1000))
+                # Make object reference for GUI
+                data = [{"groupUuid": site.id,
+                         "instanceType": "reference",
+                         "key": "ip.pool.%s.%s" % (row["Type"].lower(),
+                                                   task_result.progress),
+                         "namespace": "global",
+                         "type": "reference.setting",
+                         "value": [{"objReferences": [task_result.progress],
+                                    "type": row["Type"].lower(),
+                                    "url": ""}]}]
+                # Commit request
+                logging.debug("data=" + json.dumps(data))
+                response = dnac.post("commonsetting/global/" + site.id,
+                                     data=data).response
+                print("Waiting for Task")
+                task_result = dnac.wait_on_task(response.taskId).response
+                print("Completed in %s seconds" % (float(task_result.endTime
+                                                   - task_result.startTime)
+                                                   / 1000))
+            # Create root pool
+            else:
+                print("Adding %s" % row["IP Pool Name"])
+                # Request body for new IP pool
+                data = dna.JsonObj({"ipPoolCidr": row["IP Pool CIDR"],
+                            "ipPoolName": row["IP Pool Name"],
+                            "dhcpServerIps": make_list(row["DHCP Servers"]),
+                            "dnsServerIps": make_list(row["DNS Servers"]),
+                            "gateways": make_list(row["Gateway"]),
+                            "overlapping": make_bool(row["Overlapping"])})
+                # Commit request
+                logging.debug("data=" + json.dumps(data))
+                response = dnac.post("ippool", ver="v2", data=data).response
+                print("Waiting for Task")
+                task_result = dnac.wait_on_task(response.taskId).response
+                print("Completed in %s seconds" % (float(task_result.endTime
+                                                   - task_result.startTime)
+                                                   / 1000))
+                # Task result returns new ip pool id
+                data.id = task_result.progress
+                ippools.append(data)
 
 if __name__ == "__main__":
     main()

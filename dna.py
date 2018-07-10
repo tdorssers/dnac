@@ -34,17 +34,18 @@ class Dnac(requests.Session):
         self.headers.update({'Content-Type': 'application/json'})
         self.verify = False  # Ignore verifying the SSL certificate
 
-    def login(self, usr, passwd):
+    def login(self, username, passwd):
         """ Opens session to DNA Center """
         # Request token using HTTP basic authorization
-        response = self.post('auth/token', ver='system/v1', auth=(usr, passwd))
+        response = self.post('auth/token', ver='api/system/v1',
+                             auth=(username, passwd))
         # Persist authorization token for further REST requests
         self.headers.update({'X-Auth-Token': response['Token']})
 
-    def request(self, method, api, ver='v1', data=None, **kwargs):
+    def request(self, method, api, ver='api/v1', data=None, **kwargs):
         """ Extends base class method to handle DNA Center JSON data """
         # Construct URL, serialize data and send request
-        url = self.base_url + '/api/' + ver + '/' + api.strip('/')
+        url = self.base_url + '/' + ver.strip('/') + '/' + api.strip('/')
         data = json.dumps(data).encode('utf-8') if data is not None else None
         response = super(Dnac, self).request(method, url, data=data, **kwargs)
         # Return requests.Response object if content is not JSON

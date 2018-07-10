@@ -1,2 +1,17 @@
-IP Pool Name,IP Pool CIDR,Gateway,DHCP Servers,DNS Servers,Overlapping,Fabric,Virtual Network,Traffic Type,Layer 2,AP Provision
-Client_Pool_4,10.25.10.0/24,10.25.10.1,10.25.0.30,10.25.0.30,FALSE,Lab,DEFAULT_VN,DATA,TRUE,FALSE
+IP Pool Name,IP Pool CIDR,Gateway,DHCP Servers,DNS Servers,Overlapping,Parent Pool,Site,Type
+Underlay_Automation,10.25.2.0/24,10.25.2.1,,,FALSE,,,
+Border_Automation,10.25.3.0/25,10.25.3.1,,,FALSE,,,
+Multicast_Pool,10.25.3.128/25,10.25.3.129,,,FALSE,,,
+Client_Pool_1,10.25.4.0/24,10.25.4.1,10.25.0.30,10.25.0.30,FALSE,,,
+Client_Pool_2,10.25.5.0/24,10.25.5.1,10.25.0.30,10.25.0.30,FALSE,,,
+Voice_Pool,10.25.6.0/24,10.25.6.1,10.25.0.30,10.25.0.30,FALSE,,,
+AP_Pool,10.25.7.0/25,10.25.7.1,10.25.0.30,10.25.0.30,FALSE,,,
+Ext_Node_Pool,10.25.7.128/25,10.25.7.129,10.25.0.30,10.25.0.30,FALSE,,,
+LAN_Automation,0.0.0.0/24,,,,FALSE,Underlay_Automation,Global/Vosko-lab,lan
+Lab_Border_Auto,0.0.0.0/25,,,,FALSE,Border_Automation,Global/Vosko-lab,generic
+Lab_Multicast,0.0.0.0/25,,,,FALSE,Multicast_Pool,Global/Vosko-lab,generic
+Lab_Client_1,10.25.4.0/24,10.25.4.1,10.25.0.30,10.25.0.30,FALSE,Client_Pool_1,Global/Vosko-lab,generic
+Lab_Client_2,10.25.5.0/24,10.25.5.1,10.25.0.30,10.25.0.30,FALSE,Client_Pool_2,Global/Vosko-lab,generic
+Lab_Voice,10.25.6.0/24,10.25.6.1,10.25.0.30,10.25.0.30,FALSE,Voice_Pool,Global/Vosko-lab,generic
+Lab_AP,10.25.7.0/25,10.25.7.1,10.25.0.30,10.25.0.30,FALSE,AP_Pool,Global/Vosko-lab,generic
+Lab_Ext_Node,10.25.7.128/25,10.25.7.129,10.25.0.30,10.25.0.30,FALSE,Ext_Node_Pool,Global/Vosko-lab,lan

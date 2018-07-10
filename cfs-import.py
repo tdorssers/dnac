@@ -11,7 +11,7 @@ USERNAME = ""
 PASSWORD = ""
 CSVFILE = "cfs-import.csv"
 DELIMIT = ","
-LOGGING = False
+LOGGING = True
 
 def lookup(list_dicts, key, val):
     """ Find key by value in list of dicts and return dict """
@@ -40,7 +40,6 @@ def main():
         # Iterate unique hostnames
         for host in set(r["Hostname"] for r in rows if r["Hostname"] != ""):
             print("Host:", host)
-            new_diis = []
             removed = []
             updated = []
             added = []
@@ -48,10 +47,14 @@ def main():
             device = dna.find(devices, host, "hostname")
             # Get interfaces and device info
             ifs = dnac.get("interface/network-device/" + device.id).response
-            di = dnac.get("data/customer-facing-service/DeviceInfo",
-                          ver="v2", params={"name": device.id}).response[0]
-            # Build list of already configured interface ids
-            if_ids = [i.interfaceId for i in di.deviceInterfaceInfo]
+            try:
+                # DNAC 1.1 uses network device id as cfs name
+                di = dnac.get("data/customer-facing-service/DeviceInfo", ver="v2",
+                              params={"name": device.id}).response[0]
+            except IndexError:
+                # DNAC 1.2 uses network device hostname as cfs name
+                di = dnac.get("data/customer-facing-service/DeviceInfo", ver="v2",
+                              params={"name": device.hostname}).response[0]
             # Iterate csv file rows for this host
             for row in [r for r in rows if r["Hostname"] == host]:
                 data = None
@@ -61,32 +64,31 @@ def main():
                 sgt = lookup(sgts, "name", row["Scalable group"])
                 segment = lookup(segments, "name", row["Data segment"])
                 voice = lookup(segments, "name", row["Voice segment"])
-                # Remove interface if no values are specified
+                # Pop interface info from list and store in data dict
+                for idx, dii in enumerate(di.deviceInterfaceInfo):
+                    if dii.interfaceId == interface.id:
+                        data = di.deviceInterfaceInfo.pop(idx)
+                        break
+                # Remove interface action if no values are specified
                 if not any((auth, sgt, segment, voice)):
-                    try:
-                        if_ids.remove(interface.id)
-                    except ValueError:
-                        raise(ValueError(interface.portName + " not in cfs"))
                     removed.append(interface.portName)
-                # Update interface if id is found in list
-                elif interface.id in if_ids:
-                    if_ids.remove(interface.id)
+                    if data is None:
+                        raise(ValueError(interface.portName + " not in cfs"))
+                    data = None
+                # Update interface action if id is found in list
+                elif data is not None:
                     updated.append(interface.portName)
-                    # Pop interface info from list and store in data dict
-                    for idx, dii in enumerate(di.deviceInterfaceInfo):
-                        if dii.interfaceId == interface.id:
-                            data = di.deviceInterfaceInfo.pop(idx)
-                            break
                     # Clear fields
                     data.segment = []
                     data.pop("authenticationProfile", None)
                     data.pop("scalableGroupId", None)
+                    data.pop("connectedDeviceType", None)
                 # Add interface
                 else:
                     added.append(interface.portName)
                     data = dna.JsonObj({"interfaceId": interface.id,
-                                        "role": "LAN", "segment": [],
-                                        "connectedToSubtendedNode": False})
+                                        "role": "LAN",
+                                        "segment": []})
                 # Update fields
                 if auth is not None:
                     data.authenticationProfileId = auth.siteProfileUuid
@@ -96,14 +98,11 @@ def main():
                     data.segment.append({"idRef": voice.id})
                 if sgt is not None:
                     data.scalableGroupId = sgt.id
+                if row["Device type"] != "":
+                    data.connectedDeviceType = row["Device type"]
                 # Save in device interface info list
                 if data is not None:
-                    new_diis.append(data)
-            # Replace all keys by an idRef key for untouched interfaces
-            refs = [{"idRef": i.id} for i in di.deviceInterfaceInfo
-                    if i.interfaceId in if_ids]
-            # Save updated device interface info
-            di.deviceInterfaceInfo = refs + new_diis
+                    di.deviceInterfaceInfo.append(data)
             print("Removed:", *removed)
             print("Updated:", *updated)
             print("Added:", *added)
