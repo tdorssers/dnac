@@ -48,18 +48,17 @@ class Dnac(requests.Session):
         url = self.base_url + '/' + ver.strip('/') + '/' + api.strip('/')
         data = json.dumps(data).encode('utf-8') if data is not None else None
         response = super(Dnac, self).request(method, url, data=data, **kwargs)
-        # Return requests.Response object if content is not JSON
-        content_type = response.headers.get('Content-Type', '')
-        if 'application/json' not in content_type.lower():
-            logging.debug('Not decoding ' + content_type)
-            response.raise_for_status()  # Raise HTTPError, if one occurred
-            return response
-        # Otherwise deserialize data and return JsonObj object
-        json_obj = response.json(object_hook=JsonObj)
-        if 400 <= response.status_code < 600 and 'response' in json_obj:
-            # Use DNA Center returned error message in case of HTTP error
-            response.reason = _flatten(': ', json_obj.response,
-                                       ['errorCode', 'message', 'detail'])
+        # Deserialize response and return JsonObj object
+        try:
+            json_obj = response.json(object_hook=JsonObj)
+        except ValueError:
+            logging.debug('Response is not JSON encoded')
+            json_obj = response  # Return requests.Response object instead
+        else:
+            if 400 <= response.status_code < 600 and 'response' in json_obj:
+                # Use DNA Center returned error message in case of HTTP error
+                response.reason = _flatten(': ', json_obj.response,
+                                           ['errorCode', 'message', 'detail'])
         response.raise_for_status()  # Raise HTTPError, if one occurred
         return json_obj
 
