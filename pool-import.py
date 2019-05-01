@@ -40,7 +40,7 @@ def main():
     with dna.Dnac(HOST) as dnac:
         dnac.login(USERNAME, PASSWORD)
         # Get fabric domains, virtual networks and virtual network contexts
-        ippools = dnac.get("ippool", ver="v2").response
+        ippools = dnac.get("ippool", ver="api/v2").response
         sites = dnac.get("group", params={"groupType": "SITE"}).response
         for row in rows:
             parent = lookup(ippools, "ipPoolName", row["Parent Pool"])
@@ -62,7 +62,7 @@ def main():
                         "gateways": make_list(row["Gateway"])}
                 # Commit request
                 logging.debug("data=" + json.dumps(data))
-                response = dnac.post("ippool/subpool", ver="v2",
+                response = dnac.post("ippool/subpool", ver="api/v2",
                                      data=data).response
                 print("Waiting for Task")
                 task_result = dnac.wait_on_task(response.taskId).response
@@ -100,7 +100,7 @@ def main():
                             "overlapping": make_bool(row["Overlapping"])})
                 # Commit request
                 logging.debug("data=" + json.dumps(data))
-                response = dnac.post("ippool", ver="v2", data=data).response
+                response = dnac.post("ippool", ver="api/v2", data=data).response
                 print("Waiting for Task")
                 task_result = dnac.wait_on_task(response.taskId).response
                 print("Completed in %s seconds" % (float(task_result.endTime
