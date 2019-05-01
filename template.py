@@ -66,29 +66,17 @@ def main():
                         "productFamily"):
             print("Device type mismatch")
             return
-        # Compose body for template deploy
-        data = [{"templateId": latest.id,
-                 "targetInfo": [{"type": "MANAGED_DEVICE_UUID",
-                                 "params": params,
-                                 "id": devices[idx].id,
-                                 "hostName": devices[idx].hostname}]}]
-        # Get CFS DeviceInfo of selected device
-        dis = dnac.get("data/customer-facing-service/DeviceInfo",
-                       ver="v2", params={"name": devices[idx].id}).response
-        if not dis:
-            print("Device has not been provisioned yet")
-            return
-        # Instruct CFS to deploy a user template
-        logging.debug("payload=" + json.dumps(data))
-        payload = base64.b64encode(json.dumps(data).encode()).decode()
-        dis[0].customProvisions = [{"type": "USER_CLI_TEMPLATE_PROVISION",
-                                    "payload": payload}]
-        # Commit changes
-        logging.debug("data=" + json.dumps(dis))
-        response = dnac.put("data/customer-facing-service/DeviceInfo",
-                            ver="v2", data=dis).response
+        # Body
+        data = {"targetInfo": [{"id": devices[idx].managementIpAddress,
+                                "type": "MANAGED_DEVICE_IP",
+                                "params": params}],
+                "templateId": latest.id}
+        logging.debug("data=" + json.dumps(data))
+        response = dnac.post("template-programmer/template/deploy",
+                             data=data).response
         print("Waiting for Task")
         task_result = dnac.wait_on_task(response.taskId).response
+        print(task_result.progress)
         print("Completed in %s seconds" % (float(task_result.endTime
                                            - task_result.startTime) / 1000))
         
